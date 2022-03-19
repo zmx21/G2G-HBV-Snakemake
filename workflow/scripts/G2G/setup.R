@@ -117,7 +117,7 @@ RunSetUp <- function(POP,GT,PCA_type,LOCO,burden,n_pc,n_ppc,DIR_RAW,n_cores){
   ## thresholds discussed with Christian Thorball
   if(burden){
     maf_thresh <- 0.00001 
-    maf_max <- 0.5
+    maf_max <- 0.499
   }else{
     maf_thresh <- 0.05 ## if 0.01 many high odds ratios.
   }

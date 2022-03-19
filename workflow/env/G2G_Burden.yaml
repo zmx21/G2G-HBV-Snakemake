@@ -4,6 +4,9 @@ channels:
   - conda-forge
 dependencies:
   - r-saige=0.45.0
+  - r-skat
+  - r-spatest
+  - r-matrix
   - r-dplyr
   - r-data.table
   - r-pbmcapply

@@ -26,7 +26,7 @@ rule set_up:
   conda:
     './env/Setup.yaml'
   shell:
-    "Rscript ./scripts/G2G/setup.R {params.POP} {params.PCA_type} {params.GT} {params.Burden} {params.LOCO} {params.n_pc} {params.n_ppc} {params.DIR_RAW} {threads}"
+    "Rscript ./scripts/G2G/setup.R {params.POP} {params.PCA_type} {params.GT} {params.LOCO} {params.Burden} {params.n_pc} {params.n_ppc} {params.DIR_RAW} {threads}"
     
 rule prep_data: 
   input:
@@ -43,7 +43,12 @@ rule prep_data:
   conda:
     './env/Prep_Data.yaml'
   shell:
-    "Rscript ./scripts/G2G/prep-data.R {params.POP} {params.PCA_type} {params.GT} {params.Burden} {params.LOCO} {params.DIR_RUN} {threads}"
+    "Rscript ./scripts/G2G/prep-data.R {params.POP} {params.PCA_type} {params.GT} {params.LOCO} {params.Burden} {params.DIR_RUN} {threads}"
+
+if config["Burden"] == 'FALSE':
+  g2g_env_file = './env/G2G.yaml'
+elif config["Burden"] == 'TRUE':
+  g2g_env_file = './env/G2G_Burden.yaml'
 
 rule G2G: 
   input:
@@ -59,9 +64,9 @@ rule G2G:
     sigHitsOnly=config["sigHitsOnly"],
     DIR_RUN='../results/results_'+get_suffix()
   conda:
-    './env/G2G.yaml'
+    g2g_env_file
   threads:
     22
   shell:
-    "Rscript ./scripts/G2G/run-g2g.R {params.POP} {params.PCA_type} {params.GT} {params.Burden} {params.LOCO} {params.sigHitsOnly} {params.DIR_RUN} {threads}"
+    "Rscript ./scripts/G2G/run-g2g.R {params.POP} {params.PCA_type} {params.GT} {params.LOCO} {params.Burden} {params.sigHitsOnly} {params.DIR_RUN} {threads}"
 

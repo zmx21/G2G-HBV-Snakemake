@@ -176,42 +176,43 @@ RunG2G <- function(POP,GT,PCA_type,LOCO,DIR_SCRATCH,n_cores,debugging = F,sigHit
   }
 
   OUTCOME_sig_which <- which(OUTCOME %in% OUTCOME_sig)
-  for (counter_within_outcome in OUTCOME_sig_which) {
-
-    str_out_plink <-
-      glue::glue("{NAM_PLINK}_{OUTCOME[counter_within_outcome]}")
-
-    if (debugging) {
-      ## DEBUGGING ------------------------------------------
-      ## no covars
-
-      system(
-        glue::glue(
-          "{PLINK} --bfile {FILE_HOST_OUT} --threads {n_cores} --no-sex --logistic --pheno {FILE_PATHOGEN_OUT} --pheno-col-nums {counter_within_outcome + 2}  --out {DIR_SCRATCH}/{str_out_plink} --1 "
+  if(!burden){
+    for (counter_within_outcome in OUTCOME_sig_which) {
+      
+      str_out_plink <-
+        glue::glue("{NAM_PLINK}_{OUTCOME[counter_within_outcome]}")
+      
+      if (debugging) {
+        ## DEBUGGING ------------------------------------------
+        ## no covars
+        
+        system(
+          glue::glue(
+            "{PLINK} --bfile {FILE_HOST_OUT} --threads {n_cores} --no-sex --logistic --pheno {FILE_PATHOGEN_OUT} --pheno-col-nums {counter_within_outcome + 2}  --out {DIR_SCRATCH}/{str_out_plink} --1 "
+          )
         )
-      )
-
-    } else {
-
-
-      system(
-        glue::glue(
-          "{PLINK} --bfile {FILE_HOST_OUT} --no-sex --threads {n_cores} --glm firth --pheno {FILE_PATHOGEN_OUT} --pheno-col-nums {counter_within_outcome + 2}  --out {DIR_SCRATCH}/{str_out_plink} --covar {FILE_COVARS_PLINK} --1 --ci 0.95"
+        
+      } else {
+        
+        
+        system(
+          glue::glue(
+            "{PLINK} --bfile {FILE_HOST_OUT} --no-sex --threads {n_cores} --glm firth --pheno {FILE_PATHOGEN_OUT} --pheno-col-nums {counter_within_outcome + 2}  --out {DIR_SCRATCH}/{str_out_plink} --covar {FILE_COVARS_PLINK} --1 --ci 0.95"
+          )
         )
-      )
-
-
-      system(
-        glue::glue(
-          "{PLINK1} --bfile {FILE_HOST_OUT} --no-sex --threads {n_cores} --freq case-control --pheno {FILE_PATHOGEN_OUT} --mpheno {counter_within_outcome}  --out {DIR_SCRATCH}/{str_out_plink} --1 "
+        
+        
+        system(
+          glue::glue(
+            "{PLINK1} --bfile {FILE_HOST_OUT} --no-sex --threads {n_cores} --freq case-control --pheno {FILE_PATHOGEN_OUT} --mpheno {counter_within_outcome}  --out {DIR_SCRATCH}/{str_out_plink} --1 "
+          )
         )
-      )
-
-
+        
+        
+      }
     }
+    
   }
-
-  
   
   ##////////////////////////////////////////////////////////////////
   ##                           Run SAIGE                           //

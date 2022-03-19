@@ -1,4 +1,6 @@
 library(SAIGE)
+library(SKAT)
+
 CreateGRMGenoFileBURDEN <- function(results_path,n_cores_input,max_maf = 0.05){
   cur_dir <- here::here()
   load(glue::glue("{results_path}/prep-data.rda"))
@@ -9,7 +11,7 @@ CreateGRMGenoFileBURDEN <- function(results_path,n_cores_input,max_maf = 0.05){
   #Write out VCF File for genotype.
   system(glue::glue("{PLINK} --bfile {DIR_PROCESSED}/hbv_gilead_QC_mac_1 --mac 1 --max-maf {max_maf} --export vcf --out {DIR_PROCESSED}/hbv_gilead_QC_SAIGE"))
   system(glue::glue("./bin/bgzip -f {DIR_PROCESSED}/hbv_gilead_QC_SAIGE.vcf"))
-  system(glue::glue("{BCFTOOLS} index -f {DIR_PROCESSED}/hbv_gilead_QC_SAIGE.vcf.gz"))
+  system(glue::glue("{BCFTOOLS} index {DIR_PROCESSED}/hbv_gilead_QC_SAIGE.vcf.gz"))
   
   #Make sure ordering same as fam file
   fam_file <- data.table::fread(glue::glue("{DIR_PROCESSED}/hbv_gilead_QC_mac_1.fam"),header = F)
@@ -18,7 +20,7 @@ CreateGRMGenoFileBURDEN <- function(results_path,n_cores_input,max_maf = 0.05){
   plinkFile <- glue::glue("{DIR_PROCESSED}/hbv_gilead_QC_SAIGE_no_chr6")
   
   #Create File for LOF and MISSENSE variants
-  pos_file <- data.table::fread(text = system(glue::glue("{cur_dir}/bin/bcftools-1.9/bin/bcftools query -f '%ID %CHROM %POS %REF %ALT\n' {DIR_PROCESSED}/hbv_gilead_QC_SAIGE.vcf.gz"),intern = T)) %>%
+  pos_file <- data.table::fread(text = system(glue::glue("{BCFTOOLS} query -f '%ID %CHROM %POS %REF %ALT\n' {DIR_PROCESSED}/hbv_gilead_QC_SAIGE.vcf.gz"),intern = T)) %>%
     dplyr::select(ID=V1,CHROM=V2,POS=V3,REF=V4,ALT=V5)
   
   #RUN VEP beforehand, and save as hbv_gilead_QC_SAIGE.vep
