@@ -1,0 +1,67 @@
+configfile: '../config/config.yaml'
+
+def get_suffix():
+  if config["Burden"] == 'TRUE':
+    suffix = "BURDEN_POP_"+config["POP"]+"_GT_"+config["GT"]+"_TYPE_"+config["PCA_type"]+"_LOCO_"+config["LOCO"]
+  elif config["Burden"] == 'FALSE':
+    suffix = "POP_"+config["POP"]+"_GT_"+config["GT"]+"_TYPE_"+config["PCA_type"]+"_LOCO_"+config["LOCO"]
+  return suffix
+
+rule all:
+  input:
+     '../results/results_'+get_suffix()+"/g2g-log.rds"
+
+rule set_up: 
+  output: 
+    '../results/results_'+get_suffix()+"/setup.rda"
+  params:
+    POP=config["POP"],
+    PCA_type=config["PCA_type"],
+    GT=config["GT"],
+    Burden=config["Burden"],
+    LOCO=config["LOCO"],
+    n_pc=config["n_pc"],
+    n_ppc=config["n_ppc"],
+    DIR_RAW=config["DIR_RAW"]
+  conda:
+    './env/Setup.yaml'
+  shell:
+    "Rscript ./scripts/G2G/setup.R {params.POP} {params.PCA_type} {params.GT} {params.Burden} {params.LOCO} {params.n_pc} {params.n_ppc} {params.DIR_RAW} {threads}"
+    
+rule prep_data: 
+  input:
+    '../results/results_'+get_suffix()+"/setup.rda"
+  output:
+    '../results/results_'+get_suffix()+"/prep-data.rda"
+  params:
+    POP=config["POP"],
+    PCA_type=config["PCA_type"],
+    GT=config["GT"],
+    Burden=config["Burden"],
+    LOCO=config["LOCO"],
+    DIR_RUN='../results/results_'+get_suffix()
+  conda:
+    './env/Prep_Data.yaml'
+  shell:
+    "Rscript ./scripts/G2G/prep-data.R {params.POP} {params.PCA_type} {params.GT} {params.Burden} {params.LOCO} {params.DIR_RUN} {threads}"
+
+rule G2G: 
+  input:
+    '../results/results_'+get_suffix()+"/prep-data.rda"
+  output: 
+     '../results/results_'+get_suffix()+"/g2g-log.rds"
+  params:
+    POP=config["POP"],
+    PCA_type=config["PCA_type"],
+    GT=config["GT"],
+    Burden=config["Burden"],
+    LOCO=config["LOCO"],
+    sigHitsOnly=config["sigHitsOnly"],
+    DIR_RUN='../results/results_'+get_suffix()
+  conda:
+    './env/G2G.yaml'
+  threads:
+    22
+  shell:
+    "Rscript ./scripts/G2G/run-g2g.R {params.POP} {params.PCA_type} {params.GT} {params.Burden} {params.LOCO} {params.sigHitsOnly} {params.DIR_RUN} {threads}"
+

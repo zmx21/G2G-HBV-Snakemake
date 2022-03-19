@@ -1,0 +1,13 @@
+#Path
+DIR_RAW: '../data/raw/gilead_20181126/'
+
+#Settings
+POP: 'Asian'
+PCA_type: 'pPCA'
+GT: 'A_C_D_B'
+Burden: 'FALSE'
+LOCO: 'FALSE'
+sigHitsOnly: 'TRUE'
+#Parameters
+n_pc: 4 
+n_ppc: 6

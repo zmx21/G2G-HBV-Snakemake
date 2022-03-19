@@ -1,0 +1,16 @@
+name: G2G
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - r-saige=0.35.8.8
+  - r-dplyr
+  - r-data.table
+  - r-pbmcapply
+  - r-tidyr
+  - r-here
+  - plink=1.90b4
+  - plink2=2.00a2.3
+  - bcftools=1.3
+  - savvy=1.3.0
+

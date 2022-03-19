@@ -1,0 +1,11 @@
+name: setup
+channels:
+  - conda-forge
+dependencies:
+  - r-base=4.1.1
+  - r-glue=1.4.2
+  - r-fs=1.5.0
+  - r-ggplot2=3.3.5
+  - r-vcfR=1.12.0
+
+
