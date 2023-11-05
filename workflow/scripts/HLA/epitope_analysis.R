@@ -15,7 +15,7 @@ ExtractKMers <- function(k,mut_pos,prot_seq,residue){
   
 }
 
-RunPredictBinding <- function(out_dir,suffix,k_mer_list,hla_allele){
+RunPredictBinding <- function(out_dir,suffix,k_mer_list,hla_allele,mixMHCPredVersion='2.2'){
   system(glue::glue("mkdir -p {out_dir}"))
   ref_file <- glue::glue("{out_dir}ref_{suffix}")
   mut_file <- glue::glue("{out_dir}mut_{suffix}")
@@ -30,16 +30,22 @@ RunPredictBinding <- function(out_dir,suffix,k_mer_list,hla_allele){
     residue <- strsplit(x = cur_mut[1],split = '')[[1]][1]
     write(paste0(mapply(function(x,y) paste0('>',y,'\n',x),cur_mut,header),collapse = '\n'),glue::glue("{mut_file}_{residue}_k_{nchar(cur_mut[1])}.fasta"),append = F)
     #Run netmhcpan
-    lapply(pred_methods,function(x) system(glue::glue("python ~/G2G-HBV/mhc_i/src/predict_binding.py {x} {hla_allele} {nchar(cur_mut[1])} {mut_file}_{residue}_k_{nchar(cur_mut[1])}.fasta > {mut_file}_{residue}_k_{nchar(cur_mut[1])}.{x}.out")))
+    lapply(pred_methods,function(x) system(glue::glue("python2 /home/zmxu/G2G-HBV/mhc_i/src/predict_binding.py {x} {hla_allele} {nchar(cur_mut[1])} {mut_file}_{residue}_k_{nchar(cur_mut[1])}.fasta > {mut_file}_{residue}_k_{nchar(cur_mut[1])}.{x}.out")))
     #Run MixMHCPred
     #Use nearest proxy for HLA-A*33:03 (according to Prof. David Gfeller)
-    if(hla_allele == "HLA-A*33:03"){
+    if(hla_allele == "HLA-A*33:03" & mixMHCPredVersion != '2.2'){
       hla_allele_mix_mhc_pred <- "A3301"
     }else{
       hla_prot <- strsplit(x=strsplit(hla_allele,split = '\\*')[[1]][1],split = '-')[[1]][2]
       hla_allele_mix_mhc_pred <- paste0(hla_prot,gsub(pattern = ':',replacement = '',x = strsplit(hla_allele,split = '\\*')[[1]][2]))
     }
-    system(glue::glue("/home/zmxu/G2G-HBV/MixMHCpred/MixMHCpred -i {mut_file}_{residue}_k_{nchar(cur_mut[1])}.fasta -o {mut_file}_{residue}_k_{nchar(cur_mut[1])}.MixMHCpred.out -a {hla_allele_mix_mhc_pred}"))
+    if(mixMHCPredVersion == '2.2'){
+      system(glue::glue("/home/zmxu/G2G-HBV/MixMHCpred/MixMHCpred -i {mut_file}_{residue}_k_{nchar(cur_mut[1])}.fasta -o {mut_file}_{residue}_k_{nchar(cur_mut[1])}.MixMHCpred.out -a {hla_allele_mix_mhc_pred}"))
+    }else if(mixMHCPredVersion == '2.1'){
+      system(glue::glue("/home/zmxu/G2G-HBV/MixMHCpred2.1/MixMHCpred -i {mut_file}_{residue}_k_{nchar(cur_mut[1])}.fasta -o {mut_file}_{residue}_k_{nchar(cur_mut[1])}.MixMHCpred.out -a {hla_allele_mix_mhc_pred}"))
+    }else{
+      stop('Wrong MixMHCpred Version')
+    }
   }
   #Write non-mut file
   for(i in 1:length(k_mer_list)){
@@ -49,12 +55,20 @@ RunPredictBinding <- function(out_dir,suffix,k_mer_list,hla_allele){
       header <- sapply(1:nchar(cur_non_mut_spec_res[1]),function(x) paste0('pos_',x))
       residue <- strsplit(x = cur_non_mut_spec_res[1],split = '')[[1]][1]
       write(paste0(mapply(function(x,y) paste0('>',y,'\n',x),cur_non_mut_spec_res,header),collapse = '\n'),glue::glue("{ref_file}_{residue}_k_{nchar(cur_non_mut_spec_res[1])}.fasta"),append = F)
-      lapply(pred_methods,function(x) system(glue::glue("python ~/G2G-HBV/mhc_i/src/predict_binding.py {x} {hla_allele} {nchar(cur_non_mut_spec_res[1])} {ref_file}_{residue}_k_{nchar(cur_non_mut_spec_res[1])}.fasta > {ref_file}_{residue}_k_{nchar(cur_non_mut_spec_res[1])}.{x}.out")))
-      system(glue::glue("~/G2G-HBV/MixMHCpred/MixMHCpred -i {ref_file}_{residue}_k_{nchar(cur_non_mut_spec_res[1])}.fasta -o {ref_file}_{residue}_k_{nchar(cur_non_mut_spec_res[1])}.MixMHCpred.out -a {hla_allele_mix_mhc_pred}"))
+      lapply(pred_methods,function(x) system(glue::glue("python2 /home/zmxu/G2G-HBV/mhc_i/src/predict_binding.py {x} {hla_allele} {nchar(cur_non_mut_spec_res[1])} {ref_file}_{residue}_k_{nchar(cur_non_mut_spec_res[1])}.fasta > {ref_file}_{residue}_k_{nchar(cur_non_mut_spec_res[1])}.{x}.out")))
+      
+      if(mixMHCPredVersion == '2.2'){
+        system(glue::glue("/home/zmxu/G2G-HBV/MixMHCpred/MixMHCpred -i {ref_file}_{residue}_k_{nchar(cur_non_mut_spec_res[1])}.fasta -o {ref_file}_{residue}_k_{nchar(cur_non_mut_spec_res[1])}.MixMHCpred.out -a {hla_allele_mix_mhc_pred}"))
+      }else if(mixMHCPredVersion == '2.1'){
+        system(glue::glue("/home/zmxu/G2G-HBV/MixMHCpred2.1/MixMHCpred -i {ref_file}_{residue}_k_{nchar(cur_non_mut_spec_res[1])}.fasta -o {ref_file}_{residue}_k_{nchar(cur_non_mut_spec_res[1])}.MixMHCpred.out -a {hla_allele_mix_mhc_pred}"))
+      }else{
+        stop('Wrong MixMHCpred Version')
+      }
+      
     }
   }
 }
-GetBestBinders <- function(prefix,aa,epitope_res_dir ='~/G2G-HBV/HLA_epitopes/',mhc_mix = T){
+GetBestBinders <- function(prefix,aa,epitope_res_dir ='/home/zmxu/G2G-HBV/HLA_epitopes/',mhc_mix = T){
   epitope_res_files <- dir(epitope_res_dir)
   
   best_binder_per_k <- lapply(8:12,function(k) data.table::fread(glue::glue("{epitope_res_dir}{prefix}{k}.netmhcpan_el.out")) %>% dplyr::select(peptide,rank) %>% dplyr::arrange(rank))
@@ -121,30 +135,30 @@ GetEpitopeVsAlleleScores <- function(out_dir,epitopes){
 GetBestBindersAcrossAlleles <- function(AA_variant,best_kmers,all_kmers,hla_allele,hla_dosage){
   #Get All HLA Alleles in same gene
     hla_gene <- strsplit(hla_allele,split = '_')[[1]][1]
-    hla_dosage <- hla_dosage[,grepl(pattern = paste0(hla_gene,'_'),colnames(hla_dosage))]
+    hla_dosage <- hla_dosage[,grepl(pattern = paste0(hla_gene,'_'),colnames(hla_dosage)),with = F]
     all_alleles_raw <- colnames(hla_dosage)
     all_alleles <- sapply(all_alleles_raw,function(x) {
       allele <- strsplit(x=x,split = '_')[[1]]
       return(paste0('HLA-',allele[1],'*',gsub("[^0-9.]","",allele[2]),':',gsub("[^0-9.]","",allele[3])))
   })
   #Run Peptide prediction for peptide bound by G2G associated allele
-  # lapply(1:length(ctl_alleles_raw),function(i){
-  #   RunPredictBinding(out_dir = glue::glue('~/G2G-HBV/HLA_epitopes/best_binder_vs_alleles/{AA_variant}/{all_alleles_raw[i]}/'),all_alleles_raw[i],best_kmers,all_alleles[i])
+  # lapply(1:length(all_alleles),function(i){
+  #   RunPredictBinding(out_dir = glue::glue('/home/zmxu/G2G-HBV/HLA_epitopes/best_binder_vs_alleles/{AA_variant}/{all_alleles_raw[i]}/'),all_alleles_raw[i],best_kmers,all_alleles[i])
   # })
 
   #Run peptide scan across all peptides (best in sliding window)
-  # lapply(1:length(ctl_alleles_raw),function(i){
-  #   RunPredictBinding(out_dir = glue::glue('~/G2G-HBV/HLA_epitopes/all_alleles/{AA_variant}/{all_alleles_raw[i]}/'),AA_variant,all_kmers,all_alleles[i])
+  # lapply(1:length(all_alleles),function(i){
+  #   RunPredictBinding(out_dir = glue::glue('/home/zmxu/G2G-HBV/HLA_epitopes/all_alleles/{AA_variant}/{all_alleles_raw[i]}/'),AA_variant,all_kmers,all_alleles[i])
   # })
 
   #Parse Peptide prediction
-  allele_scores <- GetEpitopeVsAlleleScores(glue::glue('~/G2G-HBV/HLA_epitopes/best_binder_vs_alleles/{AA_variant}'),unlist(best_kmers))
+  allele_scores <- GetEpitopeVsAlleleScores(glue::glue('/home/zmxu/G2G-HBV/HLA_epitopes/best_binder_vs_alleles/{AA_variant}'),unlist(best_kmers))
 
   variant_allele <- strsplit(AA_variant,split = '_')[[1]][length(strsplit(AA_variant,split = '_')[[1]])]
-  alleles_scores_sliding_window <- lapply(dir(glue::glue('~/G2G-HBV/HLA_epitopes/all_alleles/{AA_variant}')),function(x) {
-    tryCatch(GetBestBinders(prefix = glue::glue("mut_{AA_variant}_{variant_allele}_k_"),aa = AA_variant,epitope_res_dir = glue::glue("~/G2G-HBV/HLA_epitopes/all_alleles/{AA_variant}/{x}/"),mhc_mix = F),error = function(e) return(NA))}
+  alleles_scores_sliding_window <- lapply(dir(glue::glue('/home/zmxu/G2G-HBV/HLA_epitopes/all_alleles/{AA_variant}')),function(x) {
+    tryCatch(GetBestBinders(prefix = glue::glue("mut_{AA_variant}_{variant_allele}_k_"),aa = AA_variant,epitope_res_dir = glue::glue("/home/zmxu/G2G-HBV/HLA_epitopes/all_alleles/{AA_variant}/{x}/"),mhc_mix = F),error = function(e) return(NA))}
   )
-  names(alleles_scores_sliding_window) <- dir(glue::glue('~/G2G-HBV/HLA_epitopes/all_alleles/{AA_variant}'))
+  names(alleles_scores_sliding_window) <- dir(glue::glue('/home/zmxu/G2G-HBV/HLA_epitopes/all_alleles/{AA_variant}'))
   alleles_scores_sliding_window <- alleles_scores_sliding_window[sapply(alleles_scores_sliding_window,function(x) !all(is.na(x)))]
 
   el_epitope_allele_mat_sliding <- matrix(data = NA,nrow = length(alleles_scores_sliding_window),ncol = nrow(alleles_scores_sliding_window[[1]]))
@@ -258,7 +272,7 @@ GetFreqByAllele <- function(hla_dosage,haplotype_df,hla_gene,target_allele,dat_e
   }
   
   freq_df <- dplyr::left_join(freq_df,binding_affinity_by_hla_group,by=c('hla_group'='hla_group','AA'='AA'))
-  freq_df <- dplyr::mutate(freq_df,strong_binder = ifelse(round(binding_score,1) >= 1,F,T))
+  freq_df <- dplyr::mutate(freq_df,strong_binder = ifelse(round(binding_score,1) >= 0.5,F,T))
   
   freq_df$hla_group_raw <- sapply(freq_df$hla_group,function(x) strsplit(x=x,split = 'HLA-')[[1]][2])
   freq_df$hla_group_raw <- sapply(freq_df$hla_group_raw,function(x) gsub(x=gsub(x=x,pattern = '\\*',replacement = '_'),pattern = ':',replacement = '_'))
@@ -284,7 +298,7 @@ GetFreqByAllele <- function(hla_dosage,haplotype_df,hla_gene,target_allele,dat_e
 
 #Load Asian Data
 dat_env_asn <- new.env()
-load('~/G2G-HBV/data/results_POP_asian_GT_A_C_D_B_TYPE_pPCA_LOCO_FALSE/prep-data.rda',envir = dat_env_asn)
+load('/home/zmxu/G2G-HBV/data/results_POP_asian_GT_A_C_D_B_TYPE_pPCA_LOCO_FALSE/prep-data.rda',envir = dat_env_asn)
 asn_cluster <- dat_env_asn$ids_unrelated %>% dplyr::select(host_id = X1)
 
 dat_pathogen_raw_asn <- as.data.frame(dat_env_asn$dat_pathogen_raw[match(asn_cluster$host_id,dat_env_asn$dat_pathogen_raw$ID),-1])
@@ -303,28 +317,28 @@ all_AA_freq <- apply(dat_pathogen_raw_asn,2,function(x){
 })
 all_AA_df_asn <- data.frame(Prot = all_AA_prot,Pos = all_AA_pos,Residual = all_AA_residual,Freq = all_AA_freq,stringsAsFactors = F)
 #Load HLA_Allele Dosage
-hla_dosage_asn <- data.table::fread('~/G2G-HBV/PyHLA_Out/Asian/hla_allele_assocAllele.dosage')
+hla_dosage_asn <- data.table::fread('/home/zmxu/G2G-HBV/PyHLA_Out/Asian/hla_allele_assocAllele.dosage')
 
 
 #Reference genome for Genotype C
-hbv_geno_c_prot_seq <- seqinr::read.fasta('~/G2G-HBV/data/raw/gilead_20181126/viral_seq/Ref_Genome/GQ924620_AA.fasta')
+hbv_geno_c_prot_seq <- seqinr::read.fasta('/home/zmxu/G2G-HBV/data/raw/gilead_20181126/viral_seq/Ref_Genome/GQ924620_AA.fasta')
 names(hbv_geno_c_prot_seq) <- c('Pol','S','X','PC_C','C')
 
 #PC_C_160, run through all k-mer lengths and possible residues.
 k_mer_length <- 8:14
 mut_pos = 160
 k_mers_PC_C_pos_160_A <- lapply(k_mer_length,function(i) list(mut = ExtractKMers(i,mut_pos,hbv_geno_c_prot_seq$PC_C,'A'),non_mut = lapply(setdiff(dplyr::filter(all_AA_df_asn,Prot == 'PC_C',Pos == mut_pos)$Residual,'A'),function(x) ExtractKMers(i,mut_pos,hbv_geno_c_prot_seq$PC_C,x))))
-RunPredictBinding('~/G2G-HBV/HLA_epitopes/','PC_C_pos_0160_A',k_mers_PC_C_pos_160_A,"HLA-A*33:03")
+# RunPredictBinding('/home/zmxu/G2G-HBV/HLA_epitopes/','PC_C_pos_0160_A',k_mers_PC_C_pos_160_A,"HLA-A*33:03")
 
 #Pol_49
 mut_pos = 49
 k_mers_Pol_pos_49_N <- lapply(k_mer_length,function(i) list(mut = ExtractKMers(i,mut_pos,hbv_geno_c_prot_seq$Pol,'N'),non_mut = lapply(setdiff(dplyr::filter(all_AA_df_asn,Prot == 'Pol',Pos == mut_pos)$Residual,'N'),function(x) ExtractKMers(i,mut_pos,hbv_geno_c_prot_seq$Pol,x))))
-RunPredictBinding('~/G2G-HBV/HLA_epitopes/','Pol_pos_0049_N',k_mers_Pol_pos_49_N,"HLA-A*02:06")
+# RunPredictBinding('/home/zmxu/G2G-HBV/HLA_epitopes/','Pol_pos_0049_N',k_mers_Pol_pos_49_N,"HLA-A*02:06")
 
 
 #European Cohort
 dat_env_eur <- new.env()
-load('~/G2G-HBV/data/results_POP_european_GT_A_C_D_F_H_TYPE_pPCA_LOCO_FALSE/prep-data.rda',envir = dat_env_eur)
+load('/home/zmxu/G2G-HBV/data/results_POP_european_GT_A_C_D_F_H_TYPE_pPCA_LOCO_FALSE/prep-data.rda',envir = dat_env_eur)
 eur_cluster <- dat_env_eur$ids_unrelated %>% dplyr::select(host_id = X1)
 
 dat_pathogen_raw_eur <- as.data.frame(dat_env_eur$dat_pathogen_raw[match(eur_cluster$host_id,dat_env_eur$dat_pathogen_raw$ID),-1])
@@ -344,13 +358,13 @@ all_AA_freq <- apply(dat_pathogen_raw_eur,2,function(x){
 })
 all_AA_df_eur <- data.frame(Prot = all_AA_prot,Pos = all_AA_pos,Residual = all_AA_residual,Freq = all_AA_freq,stringsAsFactors = F)
 #Load HLA_Allele Dosage
-hla_dosage_eur <- data.table::fread('~/G2G-HBV/PyHLA_Out/European/hla_allele_assocAllele.dosage')
+hla_dosage_eur <- data.table::fread('/home/zmxu/G2G-HBV/PyHLA_Out/European/hla_allele_assocAllele.dosage')
 
 #Reference genome for Genotype D
-hbv_geno_d_prot_seq <- seqinr::read.fasta('~/G2G-HBV/data/raw/gilead_20181126/viral_seq/Ref_Genome/FJ356716_AA.fasta')[c(1,2,5,6)]
+hbv_geno_d_prot_seq <- seqinr::read.fasta('/home/zmxu/G2G-HBV/data/raw/gilead_20181126/viral_seq/Ref_Genome/FJ356716_AA.fasta')[c(1,2,5,6)]
 names(hbv_geno_d_prot_seq) <- c('Pol','S','X','PC_C')
 
 
 mut_pos = 67
-k_mers_PC_C_pos_67_Y <- lapply(k_mer_length,function(i) list(mut = ExtractKMers(i,mut_pos,hbv_geno_d_prot_seq$PC_C,'Y'),non_mut = lapply(setdiff(dplyr::filter(all_AA_df_eur,Prot == 'PC_C',Pos == mut_pos)$Residual,'Y'),function(x) ExtractKMers(i,mut_pos,hbv_geno_c_prot_seq$PC_C,x))))
-RunPredictBinding('~/G2G-HBV/HLA_epitopes/','PC_C_pos_0067_Y',k_mers_PC_C_pos_67_Y,"HLA-A*01:01")
+k_mers_PC_C_pos_67_Y <- lapply(k_mer_length,function(i) list(mut = ExtractKMers(i,mut_pos,hbv_geno_c_prot_seq$PC_C,'Y'),non_mut = lapply(setdiff(dplyr::filter(all_AA_df_eur,Prot == 'PC_C',Pos == mut_pos)$Residual,'Y'),function(x) ExtractKMers(i,mut_pos,hbv_geno_c_prot_seq$PC_C,x))))
+#RunPredictBinding('/home/zmxu/G2G-HBV/HLA_epitopes/','PC_C_pos_0067_Y',k_mers_PC_C_pos_67_Y,"HLA-A*01:01")
