@@ -18,7 +18,7 @@ Dependencies: [G2G](workflow/scripts/G2G)
 
 ### Scripts to run PreS1-Haplotype analysis:
 
-Haplotype calling: [Haplotypes](workflow/scripts/haplotypes/)
+Haplotype calling: [Haplotypes](workflow/scripts/Haplotypes/)
 
 
 DnDs calculation:[DnDs](workflow/scripts/DnDs/)
